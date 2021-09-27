@@ -1,3 +1,8 @@
+#忽略文件夹.vscode内的文件
 /.vscode/
 
+#忽略.exe结尾的文件
 *.exe
+
+#忽略private内的文件
+/private/
