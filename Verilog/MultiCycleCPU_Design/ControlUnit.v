@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 //Control Unit
 module ControlUnit(
+        input CLK,
+        input reset,
         input [1:0] cmp,        //比较器结果
         input [7:0] op,         //操作码
         input [2:0] funct3,     //3位功能码
@@ -15,9 +17,22 @@ module ControlUnit(
         output reg Sign,        //立即数符号扩展信号
         output reg[1:0] Digit,  //读写位数
         output reg DataWr,      //存储器写使能
-        output reg immres       //rd是否选择imm直接作为数据
+        output reg immres,       //rd是否选择imm直接作为数据
+        output reg PCWr, //new
+        output reg IRWr,
+        output reg [2:0] state, 
+        output reg [2:0] nextState    //状态机
     );
+
+    parameter [2:0] init = 3'b111, //初始态
+        sIF = 3'b000,              //取指令
+        sID = 3'b001,              //译码
+        sEXE = 3'b010,             //执行
+        sMEM = 3'b100,             //访存存储器
+        sWB = 3'b011;              //写回寄存器
+
     initial begin
+        state = init;
         PCSrc = 0;
         AluOp = 3'b000;  //默认ALU加法
         Alu1Src = 0;
@@ -28,12 +43,75 @@ module ControlUnit(
         Sign = 1;        //默认带符号扩展
         Digit = 2'b10;   //默认32位读写
         DataWr = 0;      //默认关闭写存储器
+        PCWr = 0;
+        IRWr = 0;
     end
 
-    always@(op or cmp or funct3 or funct7) 
-    begin
-        immres = (op == 7'b0110111) ? 1 : 0;   //lui直接让立即数作为rd输入
+    //状态机部分
+    // 计算下一个状态nextState
+    always@(state or op or reset) begin
+        case(state)
+            init : nextState = sIF;
+            sIF: nextState = sID;
+            sID: nextState = sEXE;
+            sEXE: begin 
+                case (op)
+                    7'b1100011: nextState = sIF;  //bx
+                    7'b0100011: nextState = sMEM; //sx
+                    7'b0000011: nextState = sMEM; //lx
+                    default: nextState = sWB;
+                endcase
+            end
+            sMEM: begin
+                if(op == 7'b0100011) begin
+                    //sx
+                    nextState = sIF;
+                end 
+                else begin
+                    //lx
+                    nextState = sWB;
+                end
+            end
+            sWB: nextState = sIF;
+        endcase
+    end
+    //时钟上升沿更新state
+    always@(posedge CLK) begin
+       if(reset) begin
+           state <= sIF;
+       end else begin
+           state <= nextState;
+       end
+   end
 
+    always@(state or op or cmp or funct3 or funct7) 
+    begin
+        if (nextState == sIF) begin
+            PCWr = 1;
+            IRWr = 1;
+        end 
+        else if (state == sID) begin
+            PCWr = 0;
+            IRWr = 1;
+        end
+        else begin
+            PCWr = 0;
+            IRWr = 0;
+        end
+
+        if (state == sMEM & op == 7'b0100011) begin
+            DataWr = 1; //S-type指令允许写存储器
+        end else begin
+            DataWr = 0;
+        end
+
+        if (state == sWB) begin
+            RegWr = 1;
+        end else begin
+            RegWr = 0;
+        end
+
+        immres = (op == 7'b0110111) ? 1 : 0;   //lui直接让立即数作为rd输入
         case(op)
             //R type
             7'b0110011:
@@ -49,8 +127,6 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 0;
                             RegDst = 2'b00;
-                            RegWr = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         //sub
@@ -60,8 +136,6 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 0;
                             RegDst = 2'b00;
-                            RegWr = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                     end
@@ -73,8 +147,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b00;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //or
@@ -85,8 +157,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b00;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //and
@@ -97,8 +167,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b00;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //sll
@@ -109,8 +177,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b00;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //srl&sra
@@ -123,8 +189,6 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 0;
                             RegDst = 2'b00;
-                            RegWr = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         //sra
@@ -134,8 +198,6 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 0;
                             RegDst = 2'b00;
-                            RegWr = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                     end
@@ -146,8 +208,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b11;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //sltu
@@ -157,8 +217,6 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b11;
-                        RegWr = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                 endcase
@@ -175,10 +233,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b00;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //xori
@@ -189,10 +245,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b00;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //ori
@@ -203,10 +257,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b00;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //andi
@@ -217,10 +269,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b00;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //slli
@@ -231,9 +281,7 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b00;
-                        RegWr = 1;
                         ExtSel = 3'b101;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //srli&srai
@@ -246,9 +294,7 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 1;
                             RegDst = 2'b00;
-                            RegWr = 1;
                             ExtSel = 3'b101;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         //srai
@@ -258,9 +304,7 @@ module ControlUnit(
                             Alu1Src = 0;
                             Alu2Src = 1;
                             RegDst = 2'b00;
-                            RegWr = 1;
                             ExtSel = 3'b101;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                     end
@@ -271,10 +315,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b11;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                     //sltiu
@@ -284,10 +326,8 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 0;
                         RegDst = 2'b11;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 0; //无符号扩展
-                        DataWr = 0;
                         Digit = 2'b10;   //默认32位读写
                     end
                 endcase
@@ -304,11 +344,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b01;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
                         Digit = 2'b00;
-                        DataWr = 0;
                     end
                     //lh
                     3'b001:
@@ -318,11 +356,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b01;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
                         Digit = 2'b01;
-                        DataWr = 0;
                     end
                     //lw
                     3'b010:
@@ -332,11 +368,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b01;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
                         Digit = 2'b10;
-                        DataWr = 0;
                     end
                     //lbu
                     3'b100:
@@ -346,11 +380,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b01;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 0;
                         Digit = 2'b00;
-                        DataWr = 0;
                     end
                     //lhu
                     3'b101:
@@ -360,11 +392,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b01;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 0;
                         Digit = 2'b01;
-                        DataWr = 0;
                     end
                 endcase
             end
@@ -379,11 +409,9 @@ module ControlUnit(
                         AluOp = 3'b000;
                         Alu1Src = 0;
                         Alu2Src = 1;
-                        RegWr = 0;
                         ExtSel = 3'b001;
                         Sign = 1;
                         Digit = 2'b00;
-                        DataWr = 1;
                     end
                     //sh
                     3'b001:
@@ -392,11 +420,9 @@ module ControlUnit(
                         AluOp = 3'b000;
                         Alu1Src = 0;
                         Alu2Src = 1;
-                        RegWr = 0;
                         ExtSel = 3'b001;
                         Sign = 1;
                         Digit = 2'b01;
-                        DataWr = 1;
                     end
                     //sw
                     3'b010:
@@ -405,11 +431,9 @@ module ControlUnit(
                         AluOp = 3'b000;
                         Alu1Src = 0;
                         Alu2Src = 1;
-                        RegWr = 0;
                         ExtSel = 3'b001;
                         Sign = 1;
                         Digit = 2'b10;
-                        DataWr = 1;
                     end
                 endcase
             end
@@ -425,16 +449,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -447,16 +467,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -469,16 +485,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -491,16 +503,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 1;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -513,16 +521,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 0;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -535,16 +539,12 @@ module ControlUnit(
                             AluOp = 3'b000;
                             Alu1Src = 1;
                             Alu2Src = 1;
-                            RegWr = 0;
                             ExtSel = 3'b010;
                             Sign = 0;
-                            DataWr = 0;
                             Digit = 2'b10;   //默认32位读写
                         end
                         else begin
                             PCSrc = 0;
-                            RegWr = 0;
-                            DataWr = 0;
                             Alu1Src = 1;
                             Alu2Src = 1;
                         end
@@ -563,11 +563,9 @@ module ControlUnit(
                         Alu1Src = 1;
                         Alu2Src = 1;
                         RegDst = 2'b10;
-                        RegWr = 1;
                         ExtSel = 3'b100;
                         Sign = 1;
                         Digit = 2'b10;
-                        DataWr = 0;
                     end
                 endcase
             end
@@ -583,11 +581,9 @@ module ControlUnit(
                         Alu1Src = 0;
                         Alu2Src = 1;
                         RegDst = 2'b10;
-                        RegWr = 1;
                         ExtSel = 3'b000;
                         Sign = 1;
                         Digit = 2'b10;
-                        DataWr = 0;
                     end
                 endcase
             end
@@ -596,11 +592,9 @@ module ControlUnit(
             //lui
             begin
                 PCSrc = 0;
-                RegWr = 1;
                 ExtSel = 3'b011;
                 Sign = 1;
                 Digit = 2'b10;
-                DataWr = 0;
             end
             //U type2
             7'b0010111:
@@ -611,11 +605,9 @@ module ControlUnit(
                 Alu1Src = 1;
                 Alu2Src = 1;
                 RegDst = 2'b00;
-                RegWr = 1;
                 ExtSel = 3'b011;
                 Sign = 1;
                 Digit = 2'b10;
-                DataWr = 0;
             end
         endcase
     end

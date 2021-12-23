@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 
 module InsMEM(
+        input IRWr,
+        input CLK,
         input [31:0] curPC,      //PC值
         output reg[7:0] op,      //操作码位段
         output reg[2:0] funct3,  //3位功能码位段
@@ -47,9 +49,11 @@ module InsMEM(
     end
 
     //小端模式,PC改变就取指令
-    always@(curPC)
+    always@(negedge CLK)
+    //  always@(curPC)
     begin
         //取指令
+        if(IRWr) 
         begin
             instr[7:0] = rom[curPC];
             instr[15:8] = rom[curPC + 1];

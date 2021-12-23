@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
 module SingleCycleCPU(
-        input CLK,
-        input Reset,
+        input CLK,                //时钟信号
+        input Reset,              //复位信号
         output [31:0] curPC,      //当前地址
         output [31:0] nextPC,     //下条地址
         output [4:0] rs1,         //rs1地址
@@ -14,7 +14,7 @@ module SingleCycleCPU(
 
         output [31:0] instr,      //指令
         output [7:0] op,          //操作码
-        output [4:0] rd          //rd地址
+        output [4:0] rd           //rd地址
     );
 
     wire[24:0] imm;        //指令分割imm段
@@ -22,22 +22,23 @@ module SingleCycleCPU(
     wire [2:0] funct3;
     wire [6:0] funct7;
     wire [31:0] DataOut;   //存储器读数据
+    wire [1:0] cmp;      //比较器输出
+    //控制信号
     wire PCSrc;
     wire [2:0] AluOp;
     wire AluSrc1;
     wire AluSrc2;
     wire RegWr;
-    wire RegDst;
+    wire [1:0]RegDst;
     wire [2:0] ExtSel;
     wire Sign;
     wire [1:0] Digit;
     wire DataWr;
-    wire [1:0] cmp;
     wire immres;
 
     PC pc(
         .CLK(CLK),       //时钟
-        .Reset(Reset),   //是否重置地址。0-初始化PC
+        .Reset(Reset),   //是否重置地址
         .PCSrc(PCSrc),   //数据选择器输入
         .AluOutput(AluOutput), //ALU计算结果
         .curPC(curPC),    //当前指令的地址
@@ -63,49 +64,52 @@ module SingleCycleCPU(
     );
 
     ALU alu(
-        .ALUSrc1(AluSrc1),
-        .ALUSrc2(AluSrc2),
-        .ReadData1(ReadData1),
-        .ReadData2(ReadData2),
-        .extend(extend),
-        .PC(curPC),
-        .AluOp(AluOp),
-        .AluOutput(AluOutput)
+        .ALUSrc1(AluSrc1),     //输入端1位选
+        .ALUSrc2(AluSrc2),     //输入端2位选
+        .ReadData1(ReadData1), //rs1寄存器读取数据
+        .ReadData2(ReadData2), //rs2寄存器读取数据
+        .extend(extend),       //扩展后立即数
+        .PC(curPC),            //当前地址用于计算跳转地址
+        .AluOp(AluOp),         //ALU功能码
+        .cmp(cmp),             //比较器输出结果
+        .AluOutput(AluOutput)  //ALU计算结果
     );
 
-    InsMEM imsmem(
-        .curPC(curPC),
-        .op(op),
-        .funct3(funct3),
-        .funct7(funct7),
-        .rs1(rs1),
-        .rs2(rs2),
-        .imm(imm)
+    InsMEM insmem(
+        .curPC(curPC),   //PC值
+        .op(op),         //操作码位段
+        .funct3(funct3), //3位功能码位段
+        .funct7(funct7), //7位功能码位段
+        .rs1(rs1),       //rs2地址位段
+        .rs2(rs2),       //rs2地址位段
+        .rd(rd),         //rd地址位段
+        .imm(imm),       //立即数位段传给extend模块拼接扩展
+        .instr(instr)    //读取得到32位指令
     );
 
     Extend ext(
-        .imm(imm),   //立即数
-        .Sign(Sign),         //扩展符号
-        .ExtSel(ExtSel),       //扩展方式
-        .extend(extend)
+        .imm(imm),        //立即数字段
+        .Sign(Sign),      //扩展符号
+        .ExtSel(ExtSel),  //扩展方式
+        .extend(extend)   //扩展后立即数
     );
 
     RegisterFile regfile(
-        .CLK(CLK),            //时钟
-        .immres(extend),         //立即数直接写入信号
-        .rs1(rs1),      //rs1寄存器地址输入端口
-        .rs2(rs2),      //rs2寄存器地址输入端口
+        .CLK(CLK),         //时钟
+        .immres(immres),   //立即数直接写入信号
+        .rs1(rs1),         //rs1寄存器地址输入端口
+        .rs2(rs2),         //rs2寄存器地址输入端口
         .WriteReg(rd),
-        .AluOutput(AluOutput),  //ALU输出
-        .imm(imm),      //imm扩展器输出
-        .Datain(DataOut),   //存储器输出
-        .PC(curPC),       //当前PC值
-        .cmp(cmp),      //比较器输出
-        .RegDst(RegDst),    //输入具体数据位选
-        .RegWr(RegWr),               //写使能信号，为1时在时钟边沿触发写入
-        .DB(DB),     //输入总线数据
-        .ReadData1(ReadData1),  //rs1寄存器数据输出端口
-        .ReadData2(ReadData2)   //rs2寄存器数据输出端口
+        .AluOutput(AluOutput), //ALU输出
+        .extend(extend),       //imm扩展器输出
+        .Datain(DataOut),      //存储器输出
+        .PC(curPC),            //当前PC值
+        .cmp(cmp),             //比较器输出
+        .RegDst(RegDst),       //输入具体数据位选
+        .RegWr(RegWr),         //写使能信号，为1时在时钟边沿触发写入
+        .DB(DB),               //输入总线数据
+        .ReadData1(ReadData1), //rs1寄存器数据输出端口
+        .ReadData2(ReadData2)  //rs2寄存器数据输出端口
     );
 
     DataMEM datamem(

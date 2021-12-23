@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 module PC(
+        input PCWr,
         input CLK,               //时钟
         input Reset,             //是否重置地址。1-初始化PC，否则接受新地址
         input PCSrc,             //数据选择器输入
@@ -15,8 +16,8 @@ module PC(
 
     
     //检测时钟下降沿计算新指令地址 
-    always@(negedge CLK)
-    begin
+    always@(*) begin
+    // always@(negedge CLK) begin
         // #20000 case(PCSrc)   //烧板时
         case(PCSrc)   //仿真时
             1'b0:   nextPC <= curPC + 4;
@@ -33,7 +34,9 @@ module PC(
             end
         else 
             begin
-                curPC <= nextPC;
+                if (PCWr) begin
+                    curPC <= nextPC;
+                end
             end
     end
 

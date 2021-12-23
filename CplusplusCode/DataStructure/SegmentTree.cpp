@@ -15,7 +15,7 @@
 using namespace std;
 
 ll tree[maxnum<<2];
-ll mark[maxnum<<3] = {0};
+ll mark[maxnum<<3] = {0}; //懒标记
 ll num[maxnum];
 
 void build(int l, int r, int p) {
