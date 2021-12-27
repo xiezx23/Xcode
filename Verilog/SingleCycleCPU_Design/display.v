@@ -28,7 +28,7 @@ module Display (
     end
     
     always@(count) begin
-        if(count == 32'd1111_000) CLK_CPU= 'b1;
+        if(count == 32'd1111111) CLK_CPU= 'b1;
         else CLK_CPU= 'b0;
     end
 
