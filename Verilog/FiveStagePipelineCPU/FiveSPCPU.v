@@ -98,6 +98,7 @@ module FiveSPCPU(
         .CLK(CLK),
         .clear(clear),
         .preop(op_2),
+        .prerd(rd_2),
         .rs1(rs1),
         .rs2(rs2),
         .Mwk(Mwk),
