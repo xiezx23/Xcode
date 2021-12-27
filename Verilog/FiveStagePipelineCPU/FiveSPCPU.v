@@ -57,6 +57,10 @@ module FiveSPCPU(
     wire [1:0] RegDst_4, Digit_4, cmp_4;
     wire [4:0] rs1_4, rs2_4, rd_4;
     wire clear;
+    reg zero;
+    initial begin
+        zero = 0;
+    end
 
     //IF取指令阶段
     //上升沿更新PC，下降沿取指令
@@ -66,7 +70,7 @@ module FiveSPCPU(
         .PCSrc(PCSrc),   //数据选择器输入
         .AluOutput(AluOutput_3), //ALU计算结果
         .PCdelay(PCdelay),
-        .prePC(curPC_3),
+        .prePC(curPC_1),
         .curPC(curPC)    //当前指令的地址
     );
     InsMEM insmem(
@@ -81,11 +85,6 @@ module FiveSPCPU(
         .imm(imm),       //立即数位段传给extend模块拼接扩展
         .instr(instr)    //读取得到32位指令
     );
-    Mwksend mw1(
-        .CLK(CLK),
-        .clear(clear),
-        .out(Mwk_0)
-    );
     reg32 r32_0(
         .CLK(CLK),
         .datain(curPC),
@@ -97,7 +96,6 @@ module FiveSPCPU(
     //下降沿把read1,read2,rd,extend,控制信号写入寄存器
     Bubble bb(
         .CLK(CLK),
-        .in(Mwk_0),
         .clear(clear),
         .preop(op_2),
         .rs1(rs1),
@@ -166,6 +164,7 @@ module FiveSPCPU(
         .immresOut(immres_2)
     );
     AddressReg ar_1(
+        .clear(clear),
         .CLK(CLK),
         .rs1In(rs1),
         .rs2In(rs2),
@@ -278,6 +277,7 @@ module FiveSPCPU(
         .dataout(extend_3)
     );
     AddressReg ar_2(
+        .clear(zero),
         .CLK(CLK),
         .rs1In(rs1_2),
         .rs2In(rs2_2),
@@ -337,6 +337,7 @@ module FiveSPCPU(
         .extendOut(extend_4)
     );
     AddressReg ar_3(
+        .clear(zero),
         .CLK(CLK),
         .rs1In(rs1_3),
         .rs2In(rs2_3),

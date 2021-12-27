@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 module AddressReg(
+        input clear,
         input CLK,  //时钟脉冲
         input [4:0] rs1In,
         input [4:0] rs2In,
@@ -20,6 +21,9 @@ module AddressReg(
         rs1Out <= rs1In;
         rs2Out <= rs2In;
         rdOut <= rdIn;
-        MwkOut <= MwkIn;
+        if (clear) begin
+            MwkOut <= 0;
+        end
+        else MwkOut <= MwkIn;
     end
 endmodule
