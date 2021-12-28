@@ -29,11 +29,11 @@ module Bubble(
         else begin
             if (preop == 7'b0000011) begin
                 if (rs1 == prerd) begin
-                    Mwktmp <= 0;
+                    Mwktmp <= 1;
                     PCdelay <= 1;
                 end
                 else if (rs2 == prerd) begin
-                    Mwktmp <= 0;
+                    Mwktmp <= 1;
                     PCdelay <= 1;
                 end
                 else begin

@@ -76,104 +76,97 @@ module ALU(
         // $display("aluoutput: %d\n",AluOutput);
     end 
 
-    always @(cmp or op or funct3) begin
+    always @(cmp or op or funct3 or Mwk) begin
         if (Mwk) begin
             clear = 0;
-            if (op == 7'b1111111) begin
+            if(op == 7'b1100011) begin
                 RegWr <= 0;
-                PCSrctmp <= 0;
-                clear <= 0;
+                case(funct3)
+                    //beq
+                    3'b000:
+                    begin
+                        if (cmp == 2'b00)
+                        begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else 
+                            PCSrctmp = 0;
+                    end
+                    //bne
+                    3'b001:
+                    begin
+                        if (cmp != 2'b00) begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else 
+                            PCSrctmp = 0;
+                    end
+                    //blt
+                    3'b100:
+                    begin
+                        if (cmp == 2'b01) begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else
+                            PCSrctmp = 0;
+                    end
+                    //bge
+                    3'b101:
+                    begin
+                        if (cmp == 2'b10) begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else
+                            PCSrctmp = 0;
+                    end
+                    //bltu
+                    3'b110:
+                    begin
+                        if (cmp == 2'b01) begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else
+                            PCSrctmp = 0;
+                    end
+                    //bgeu
+                    3'b111:
+                    begin
+                        if (cmp == 2'b10) begin
+                            PCSrctmp = 1;
+                            clear = 1;
+                        end
+                        else
+                            PCSrctmp = 0;
+                    end
+                endcase
             end
             else begin
-                if(op == 7'b1100011) begin
+                if (op == 7'b0100011) begin
                     RegWr <= 0;
-                    case(funct3)
-                        //beq
-                        3'b000:
-                        begin
-                            if (cmp == 2'b00)
-                            begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else 
-                                PCSrctmp = 0;
-                        end
-                        //bne
-                        3'b001:
-                        begin
-                            if (cmp != 2'b00) begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else 
-                                PCSrctmp = 0;
-                        end
-                        //blt
-                        3'b100:
-                        begin
-                            if (cmp == 2'b01) begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else
-                                PCSrctmp = 0;
-                        end
-                        //bge
-                        3'b101:
-                        begin
-                            if (cmp == 2'b10) begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else
-                                PCSrctmp = 0;
-                        end
-                        //bltu
-                        3'b110:
-                        begin
-                            if (cmp == 2'b01) begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else
-                                PCSrctmp = 0;
-                        end
-                        //bgeu
-                        3'b111:
-                        begin
-                            if (cmp == 2'b10) begin
-                                PCSrctmp = 1;
-                                clear = 1;
-                            end
-                            else
-                                PCSrctmp = 0;
-                        end
-                    endcase
+                    PCSrctmp <= 0;
                 end
                 else begin
-                    if (op == 7'b0100011) begin
-                        RegWr <= 0;
-                        PCSrctmp <= 0;
+                    //jal
+                    if (op == 7'b1101111) begin
+                        PCSrctmp <= 1;
+                        clear <= 1;
+                        RegWr <= 1;
                     end
                     else begin
-                        //jal
-                        if (op == 7'b1101111) begin
+                        if (op == 7'b1100111) begin
                             PCSrctmp <= 1;
                             clear <= 1;
                             RegWr <= 1;
                         end
                         else begin
-                            if (op == 7'b1100111) begin
-                                PCSrctmp <= 1;
-                                clear <= 1;
-                                RegWr <= 1;
-                            end
-                            else begin
-                                PCSrctmp <= 0;
-                                RegWr <= 1;
-                                clear <= 0;
-                            end
+                            PCSrctmp <= 0;
+                            RegWr <= 1;
+                            clear <= 0;
                         end
                     end
                 end

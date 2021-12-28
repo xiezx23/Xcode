@@ -101,7 +101,7 @@ module FiveSPCPU(
         .prerd(rd_2),
         .rs1(rs1),
         .rs2(rs2),
-        .Mwk(Mwk),
+        .Mwk(Mwk),  //IF-ID间工作信号
         .PCdelay(PCdelay)
     );
 
@@ -165,7 +165,7 @@ module FiveSPCPU(
         .immresOut(immres_2)
     );
     AddressReg ar_1(
-        .clear(clear),
+        .clear(clear | PCdelay),
         .CLK(CLK),
         .rs1In(rs1),
         .rs2In(rs2),
@@ -174,7 +174,7 @@ module FiveSPCPU(
         .rs1Out(rs1_2),
         .rs2Out(rs2_2),
         .rdOut(rd_2),
-        .MwkOut(Mwk_2)
+        .MwkOut(Mwk_2) //ID-EXE间工作信号
     );
     reg32 r32_1(
         .CLK(CLK),
@@ -209,7 +209,7 @@ module FiveSPCPU(
 
     //EXE阶段
     //下降沿把alu结果写入寄存器，把PCSrc送回PC模块
-    Transmit fw(
+    Transmit fw(  //转发技术模块
         .CLK(CLK),
         .rs1(rs1_2),
         .rs2(rs2_2),
@@ -287,7 +287,7 @@ module FiveSPCPU(
         .rs1Out(rs1_3),
         .rs2Out(rs2_3),
         .rdOut(rd_3),
-        .MwkOut(Mwk_3)
+        .MwkOut(Mwk_3) //EXE-MEM间工作信号
     );
     MEMreg mr_1(
         .CLK(CLK),
@@ -347,7 +347,7 @@ module FiveSPCPU(
         .rs1Out(rs1_4),
         .rs2Out(rs2_4),
         .rdOut(rd_4),
-        .MwkOut(Mwk_4)
+        .MwkOut(Mwk_4) //MEM-WB间工作信号
     );
     reg8 r8_3(
         .CLK(CLK),
