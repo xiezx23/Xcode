@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module TestSingleCycleCpu();
+module TestFSPCCpu();
     //INPUTS
     reg CLK;
     reg Reset;

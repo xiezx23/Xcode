@@ -12,26 +12,44 @@ module PC(
     initial begin
         curPC <= -4; //初始值为-4
     end
+    reg [31:0] tmp;
+
+    always @(tmp)  begin
+        curPC <= tmp;
+    end
 
     
     //检测时钟上升沿计算新指令地址 
-    always@(posedge CLK or posedge Reset)
+    always@(posedge CLK)
+    // #20000 begin
     begin
-        if(Reset) //复位置1时把PC归零
-        begin
-            curPC <= 0;
+        if (Reset | PCdelay) begin
+            if (Reset) begin
+                tmp <= 0;
+            end
+            else tmp = prePC;
         end
         else begin
-            if (PCdelay) begin
-                curPC <= prePC;
-            end
-            else begin
-                case(PCSrc)   //仿真时
-                    1'b0:   curPC <= curPC + 4;
-                    1'b1:   curPC <= AluOutput;
-                endcase
-            end
+            case(PCSrc)   //仿真时
+                1'b0:   tmp <= curPC + 4;
+                1'b1:   tmp <= AluOutput;
+            endcase
         end
+        // if(Reset) //复位置1时把PC归零
+        // begin
+        //     tmp <= 0;
+        // end
+        // else begin
+        //     if (PCdelay) begin
+        //         tmp <= prePC;
+        //     end
+        //     else begin
+        //         case(PCSrc)   //仿真时
+        //             1'b0:   tmp <= curPC + 4;
+        //             1'b1:   tmp <= AluOutput;
+        //         endcase
+        //     end
+        // end
     end
 
 endmodule

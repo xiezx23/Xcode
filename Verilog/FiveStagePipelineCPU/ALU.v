@@ -36,7 +36,6 @@ module ALU(
         end
         else begin
             PCSrc <= 0;
-            RegWr <= 0;
         end
     end
 
@@ -172,6 +171,9 @@ module ALU(
                 end
             end
         end
-        else clear <= 0;
+        else begin
+            clear <= 0;
+            RegWr <= 0;
+        end
     end
 endmodule

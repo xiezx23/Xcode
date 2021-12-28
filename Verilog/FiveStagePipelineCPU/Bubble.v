@@ -5,7 +5,7 @@
 module Bubble(
         input CLK,  //时钟脉冲
         input clear,
-        input [6:0] preop,
+        input [7:0] preop,
         input [4:0] prerd,
         input [4:0] rs1,
         input [4:0] rs2,
