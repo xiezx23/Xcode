@@ -10,14 +10,12 @@ module Transmit(
         input preMwk, //pre
         input preRegWr,
         input [1:0] preRegDst,
-        input [7:0] preop,
         input [4:0] prerd,
         input [1:0] precmp,
         input [31:0] preAluOutput,
         input ppreMwk,//ppre
         input ppreRegWr,
         input [1:0] ppreRegDst,
-        input [7:0] ppreop, 
         input [4:0] pprerd,
         input [1:0] pprecmp,
         input [31:0] ppreAluOutput,

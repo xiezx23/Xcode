@@ -44,7 +44,7 @@ module FiveSPCPU(
     wire  Mwk_2,AluSrc1_2,AluSrc2_2,Sign_2,DataWr_2,immres_2; 
     wire [1:0] RegDst_2, Digit_2;
     wire [4:0] rs1_2, rs2_2, rd_2;
-    wire [7:0] op_2, op_3, op_4;
+    wire [7:0] op_2;
 
     wire [31:0] AluOutput_3, extend_3, ReadData2_3, curPC_3;
     wire Mwk_3, DataWr_3, immres_3, RegWr_3; 
@@ -199,12 +199,12 @@ module FiveSPCPU(
     reg8 r8_1(
         .CLK(CLK),
         .datain(op),
-        .dataout(op_2)
+        .dataout(op_2) //保留前一条指令的op码用于load-use阻塞和执行阶段确定RegWr
     );
     reg3 r3_1(
         .CLK(CLK),
         .datain(funct3),
-        .dataout(funct3_2)
+        .dataout(funct3_2) //保留前一条指令funct3码用于执行阶段确定RegWr
     );
 
     //EXE阶段
@@ -218,14 +218,12 @@ module FiveSPCPU(
         .preMwk(Mwk_3),
         .preRegWr(RegWr_3),
         .preRegDst(RegDst_3),
-        .preop(op_3),
         .prerd(rd_3),
         .precmp(cmp_3),
         .preAluOutput(AluOutput_3),
         .ppreMwk(Mwk_4),
         .ppreRegWr(RegWr_4),
         .ppreRegDst(RegDst_4),
-        .ppreop(op_4),
         .pprerd(rd_4),
         .pprecmp(cmp_4),
         .ppreAluOutput(AluOutput_4),
@@ -251,11 +249,6 @@ module FiveSPCPU(
         .PCSrc(PCSrc),
         .RegWr(RegWr),
         .clear(clear)
-    );
-    reg8 r8_2(
-        .CLK(CLK),
-        .datain(op_2),
-        .dataout(op_3)
     );
     reg32 r32_5(
         .CLK(CLK),
@@ -348,11 +341,6 @@ module FiveSPCPU(
         .rs2Out(rs2_4),
         .rdOut(rd_4),
         .MwkOut(Mwk_4) //MEM-WB间工作信号
-    );
-    reg8 r8_3(
-        .CLK(CLK),
-        .datain(op_3),
-        .dataout(op_4)
     );
 
     //WB阶段
