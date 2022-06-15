@@ -17,7 +17,6 @@ module PC(
     always @(tmp)  begin
         curPC <= tmp;
     end
-
     
     //检测时钟上升沿计算新指令地址 
     always@(posedge CLK)
@@ -35,21 +34,6 @@ module PC(
                 1'b1:   tmp <= AluOutput;
             endcase
         end
-        // if(Reset) //复位置1时把PC归零
-        // begin
-        //     tmp <= 0;
-        // end
-        // else begin
-        //     if (PCdelay) begin
-        //         tmp <= prePC;
-        //     end
-        //     else begin
-        //         case(PCSrc)   //仿真时
-        //             1'b0:   tmp <= curPC + 4;
-        //             1'b1:   tmp <= AluOutput;
-        //         endcase
-        //     end
-        // end
     end
 
 endmodule

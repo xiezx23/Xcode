@@ -1,7 +1,0 @@
-addi x1,x0,4
-add x2,x1,x0
-sw x2,2(x1)
-lw x3,2(x1)
-add x4,x3,x2
-addi x5,x0,8
-sub x6,x5,x1

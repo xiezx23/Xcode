@@ -208,8 +208,9 @@ module FiveSPCPU(
     );
 
     //EXE阶段
+    //上升沿进行转发技术
     //下降沿把alu结果写入寄存器，把PCSrc送回PC模块
-    Transmit fw(  //转发技术模块
+    Forwarding fw(  //转发技术模块
         .CLK(CLK),
         .rs1(rs1_2),
         .rs2(rs2_2),
@@ -300,7 +301,7 @@ module FiveSPCPU(
     );
 
     //MEM阶段
-    //上升沿把数据写入MEM，下降沿读出数据写入寄存器
+    //上升沿把数据写入存储器，下降沿读出数据写入中间寄存器
     DataMEM datamem(
         .Mwk(Mwk_3),
         .DataWr(DataWr_3), //存储器写使能

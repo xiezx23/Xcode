@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //转发模块
 //在EXE阶段的上升沿开始工作
-module Transmit(
+module Forwarding(
         input CLK,  //时钟脉冲
         input [4:0] rs1,
         input [4:0] rs2,

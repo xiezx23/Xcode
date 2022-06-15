@@ -1,0 +1,27 @@
+% 插入代码块
+\usepackage{minted}
+\begin{minted}[linenos, numbersep=5pt, frame=lines, framesep=2mm, autogobble]{C}
+
+\end{minted}  
+
+% 分栏
+\usepackage{multicol}
+\begin{multicols}{2}
+
+\end{multicols}
+
+
+% 插入图片
+\usepackage{graphicx}
+\includegraphics{a.jpg}
+
+\includegraphics[width = .8\textwidth]{a.jpg}
+
+% 插入表格
+\begin{tabular}{|c|c|}
+\hline
+& \\
+\hline
+& \\
+\hline
+\end{tabular}
