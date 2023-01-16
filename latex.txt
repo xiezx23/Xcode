@@ -15,6 +15,13 @@
 \usepackage{graphicx}
 \includegraphics{a.jpg}
 
+% 插入图片具体版本
+\begin{figure}[htbp]
+    \centering
+    \includegraphics{}
+    \caption{}
+    \end{figure} 
+
 \includegraphics[width = .8\textwidth]{a.jpg}
 
 % 插入表格
